@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/kckhchen/intaglio/compare/v1.3.0...v1.3.1) (2026-08-23)
+
+
+### Bug Fixes
+
+* change path to posix before string interpolation ([16599da](https://github.com/kckhchen/intaglio/commit/16599da2462d31562c5e3447082327cd925458c9))
+
 ## [1.3.0](https://github.com/kckhchen/intaglio/compare/v1.2.2...v1.3.0) (2026-08-22)
 
 
