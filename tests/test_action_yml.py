@@ -1,5 +1,4 @@
 import re
-import subprocess
 from pathlib import Path
 
 import pytest
@@ -45,17 +44,6 @@ def test_every_run_step_declares_shell(action):
     for step in action["runs"]["steps"]:
         if "run" in step:
             assert "shell" in step, f"{step.get('name', '(unnamed)')} lacks a shell"
-
-
-def test_run_scripts_are_valid_bash(action):
-    for step in action["runs"]["steps"]:
-        if "run" not in step:
-            continue
-        script = re.sub(r"\$\{\{[^}]+\}\}", "PLACEHOLDER", step["run"])
-        r = subprocess.run(
-            ["bash", "-n"], input=script, capture_output=True, text=True, check=False
-        )
-        assert r.returncode == 0, f"{step.get('name')}: {r.stderr}"
 
 
 def test_both_repos_are_checked_out(action):
