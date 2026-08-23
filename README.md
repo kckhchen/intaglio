@@ -172,7 +172,7 @@ jobs:
 ```
 
 > [!important]
-> If you set up a baseurl for your Jekyll site and found links dead due to duplicate baseurls e.g. `blog/blog/my-post`, set `prevent-double-baseurl: true` under the `with:` section in your `.yml` file. This could happen for Jekyll 4.x or some special themes. For more information about flags, check out [GUILD.md](./assets/docs/GUIDE.md)
+> If you set up a baseurl for your Jekyll site and found links dead due to duplicate baseurls e.g. `blog/blog/my-post`, set `prevent-double-baseurl: true` under the `with:` section in your `.yml` file. This could happen for Jekyll 4.x or some special themes. For more information about flags, check out [GUIDE.md](./assets/docs/GUIDE.md).
 
 A few things to note before proceeding with this workflow:
 
@@ -185,6 +185,19 @@ A few things to note before proceeding with this workflow:
 ## User Guide
 
 You can find the full User Guide and Advanced Settings in [GUIDE.md](./assets/docs/GUIDE.md).
+
+## What This Tool Doesn't Do
+
+This tool converts most Obsidian Markdown syntax elements into Jekyll-compatible liquid tags or html tags, but these feature supports are not included (yet):
+
+1. Note embed (frame for another note inside current note)
+2. PDF embed
+3. Mermaid graphs
+4. Backlinks
+
+If you would like any of these feature supports to be added to the tool, please open an issue or contact me. I will add these features ASAP.
+
+Other things this tool doesn't support are non-note and non-text based elements, such as bases, canvas, and graph views.
 
 ## Contributing
 
