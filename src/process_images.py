@@ -44,7 +44,8 @@ def _embedded_image_replacer(match, img_map, img_folder):
         )
         return match.group(0)
 
-    updated_link = f"![{alt}]({{{{ site.baseurl }}}}{{% link {img_folder / name} %}})"
+    posix_path = (img_folder / name).as_posix()
+    updated_link = f"![{alt}]({{{{ site.baseurl }}}}{{% link {posix_path} %}})"
 
     attrs = [f'{k}="{v}"' for k, v in (("width", width), ("height", height)) if v]
     if attrs:

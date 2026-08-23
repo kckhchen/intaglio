@@ -63,8 +63,8 @@ def _link_replacer(match, valid_files, post_folder, baseurl):
         return f"{display}"
 
     dest = valid_files[filename]["dest_path"].name
-
+    posix_path = (post_folder / dest).as_posix()
     if baseurl:
-        return f"[{display}]({{{{ site.baseurl }}}}{{% link {post_folder / dest} %}}{anchor_suffix})"
+        return f"[{display}]({{{{ site.baseurl }}}}{{% link {posix_path} %}}{anchor_suffix})"
     else:
-        return f"[{display}]({{% link {post_folder / dest} %}}{anchor_suffix})"
+        return f"[{display}]({{% link {posix_path} %}}{anchor_suffix})"
