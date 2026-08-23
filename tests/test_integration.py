@@ -7,6 +7,10 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32", reason="Bash only runs on macOS"
+)
+
 
 @pytest.fixture
 def cli(tmp_path):

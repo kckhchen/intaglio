@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,11 @@ import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 ACTION = yaml.safe_load((REPO / "action.yml").read_text(encoding="utf-8"))
+
+
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32", reason="Bash only runs on macOS"
+)
 
 
 def step_script(name, inputs=None):
