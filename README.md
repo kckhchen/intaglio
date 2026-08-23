@@ -44,7 +44,7 @@ site repository on every push.
 | <img src="./assets/images/obsidian-demo.gif" width="380" alt="Original Obsidian Article Screenshot"> | <img src="./assets/images/jekyll-demo.gif" width="380" alt="Processed Jekyll Post Screenshot"> |
 
   <div align="center">
-    <p><a href="https://kckhchen.com/intaglio/my-main-post/"><b>Read the Demo Blog Post</b></a></p>
+    <p><a href="https://kckhchen.com/intaglio-demo/my-main-post/"><b>Read the Demo Blog Post</b></a></p>
   </div>
 
 ## Quick Start
