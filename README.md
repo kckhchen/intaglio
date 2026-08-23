@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/images/icons/icon-dark.svg" width="112" alt="">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/images/icons/icon-dark.svg">
+    <img src="assets/images/icons/icon.svg" width="112" alt="Intaglio">
+  </picture>
 </p>
 
 <h1 align="center">Intaglio</h1>
