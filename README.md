@@ -119,6 +119,9 @@ python3 main.py --only "My Post.md"
 > [!note]
 > **A Note on Styling**: The first time you run the tool, it will create `_includes/obsidian-callouts.html`. This file handles the icons and colors for your callouts. Feel free to customize it.
 
+> [!important]
+> If you set up a baseurl for your Jekyll site and found links dead due to duplicate baseurls e.g. `blog/blog/my-post`, switch `PREVENT_DOUBLE_BASEURL` to `True`. This could happen for Jekyll 4.x or some special themes.
+
 ### Actions (Optional)
 
 This tool also comes with an `action.yml` for automating the converting process, as long as your vault (posts) and your Jekyll site are pushed and synced to GitHub repos. Once this is setup, your workflow becomes as simple as **"write, commit, push,"** and Actions will take care of the rest and send a PR to your Jekyll site with all the formatted posts. Follow the steps below:
@@ -168,11 +171,12 @@ jobs:
           args: --update --force --yes
 ```
 
-(For more information about flags, check out [GUIDE.md](./assets/docs/GUIDE.md).)
+> [!important]
+> If you set up a baseurl for your Jekyll site and found links dead due to duplicate baseurls e.g. `blog/blog/my-post`, set `prevent-double-baseurl: true` under the `with:` section in your `.yml` file. This could happen for Jekyll 4.x or some special themes. For more information about flags, check out [GUILD.md](./assets/docs/GUIDE.md)
 
 A few things to note before proceeding with this workflow:
 
-1. It **does not** implement incremental builds. Incremental builds rely on file modification time, which refreshes on push. In other words, it effectively uses the `--force` flag every time it runs. This, however, should not make a huge impact on efficiency.
+1. It **does not** implement incremental builds. Incremental builds rely on file modification time, which refreshes on push. In other words, it effectively uses the `--force` flag every time it runs. It acts exactly the same way as before (nothing affected).
 2. **Dates are mandatory**. As modification time becomes unreliable, it enforces explicit dates in the frontmatter. Failure to comply with this will trigger a delivery stopper.
 3. **Cleanup automatically proceeds**. Without a CLI to prompt for confirmation, `--cleanup` and `--update` rely on the `--yes` flag to automatically proceed. To address this challenge, you can set a `max-deletions` (default to 10) limit that when reached, the process will send a warning. You can decide whether to merge the PR.
 4. **Your vault and Jekyll site must be separate repositories.** The action checks out both into the runner workspace, and a single checkout cannot serve as both source and destination.
