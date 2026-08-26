@@ -91,6 +91,18 @@ class TestDeletionSafety:
 
         assert stale_file.exists()
 
+    @pytest.mark.parametrize("interrupt", [EOFError, KeyboardInterrupt])
+    def test_remove_files_aborts_on_ctrl_c_and_ctrl_d(self, fs_setup, interrupt):
+        # a closed stdin in CI raises the same way Ctrl-D does at a terminal
+        post_dir, _ = fs_setup
+        stale_file = post_dir / "delete_me.md"
+        stale_file.touch()
+
+        with patch("builtins.input", side_effect=interrupt):
+            _remove_files([stale_file])
+
+        assert stale_file.exists()
+
     def test_remove_files_proceeds_on_yes(self, fs_setup):
         post_dir, _ = fs_setup
         stale_file = post_dir / "delete_me.md"
