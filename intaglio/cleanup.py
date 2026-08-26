@@ -74,6 +74,15 @@ def _list_imgs_to_be_removed(img_dir, all_post_images):
     ]
 
 
+def _confirmed(prompt):
+    try:
+        return input(prompt).strip().lower() == "y"
+    except (EOFError, KeyboardInterrupt):
+        # Ctrl-D / Ctrl-C, or a closed stdin in CI: declining, not crashing
+        print()
+        return False
+
+
 def _remove_files(file_path_list, assume_yes=False):
     if not file_path_list:
         return
@@ -82,7 +91,7 @@ def _remove_files(file_path_list, assume_yes=False):
     for p in file_path_list:
         print(f"[{p.parent.name}] {p.name}")
 
-    if assume_yes or input("\nConfirm removal? [y/n]: ").lower() == "y":
+    if assume_yes or _confirmed("\nConfirm removal? [y/n]: "):
         for p in file_path_list:
             try:
                 p.unlink()
