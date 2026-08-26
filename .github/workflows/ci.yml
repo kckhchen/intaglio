@@ -26,3 +26,40 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: uv pip install -r requirements-dev.txt
       - run: make check
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.10"
+
+      - name: Build
+        run: uv build
+
+      - name: Check metadata
+        run: uvx twine check dist/*
+
+      - name: Install the wheel on its own
+        run: |
+          uv venv "$RUNNER_TEMP/wheel-env"
+          uv pip install --python "$RUNNER_TEMP/wheel-env/bin/python" dist/*.whl
+          "$RUNNER_TEMP/wheel-env/bin/intaglio" --version
+
+      - name: Convert a post with the installed command
+        run: |
+          mkdir -p "$RUNNER_TEMP/smoke/vault" "$RUNNER_TEMP/smoke/site"
+          printf -- '---\nshare: true\ndate: 2026-01-01\n---\n\n# Hello\n\nBody.\n' \
+            > "$RUNNER_TEMP/smoke/vault/hello.md"
+          cd "$RUNNER_TEMP/smoke/site"
+          "$RUNNER_TEMP/wheel-env/bin/intaglio" init
+          "$RUNNER_TEMP/wheel-env/bin/intaglio" run --vault "$RUNNER_TEMP/smoke/vault"
+          test -f _posts/2026-01-01-hello.md
+
+      - name: Install the way the Action does
+        run: |
+          uv venv "$RUNNER_TEMP/action-env"
+          uv pip install --python "$RUNNER_TEMP/action-env/bin/python" -r requirements.txt
+          uv pip install --python "$RUNNER_TEMP/action-env/bin/python" --no-deps .
+          "$RUNNER_TEMP/action-env/bin/intaglio" --version
