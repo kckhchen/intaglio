@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.utils import (
+from intaglio.utils import (
     _get_dest_fpath,
     get_valid_files,
     shield_content,
@@ -118,7 +118,7 @@ class TestFileScanning:
     def test_get_valid_files_filters_correctly(self, mini_vault, tmp_path):
         post_dir = tmp_path / "output"
 
-        with patch("src.utils._get_dest_fpath", return_value=Path("out/post1.md")):
+        with patch("intaglio.utils._get_dest_fpath", return_value=Path("out/post1.md")):
             results = get_valid_files(mini_vault, post_dir)
 
         assert "post1" in results
@@ -157,7 +157,7 @@ class TestDestPathLogic:
         source_path = Path("My Post.md")
         post_dir = Path("out")
 
-        with patch("src.utils._get_creation_time", return_value="2020-01-01"):
+        with patch("intaglio.utils._get_creation_time", return_value="2020-01-01"):
             result = _get_dest_fpath(post, source_path, post_dir)
 
         assert result.name == "2020-01-01-my-post.md"

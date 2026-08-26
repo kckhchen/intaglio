@@ -3,14 +3,15 @@ import sys
 from pathlib import Path
 
 import frontmatter
-from src.fs_ops import copy_images
-from src.patterns import IMG_EXT
-from src.process_callouts import process_callouts
-from src.process_images import process_embedded_images
-from src.process_links import process_wikilinks
-from src.process_math import process_math
-from src.text_cleanup import text_cleanup
-from src.utils import shield_content, shield_liquid, unshield
+
+from intaglio.fs_ops import copy_images
+from intaglio.patterns import IMG_EXT
+from intaglio.process_callouts import process_callouts
+from intaglio.process_images import process_embedded_images
+from intaglio.process_links import process_wikilinks
+from intaglio.process_math import process_math
+from intaglio.text_cleanup import text_cleanup
+from intaglio.utils import shield_content, shield_liquid, unshield
 
 
 def process_posts(files, cfg, dry, layout, force, only=None):

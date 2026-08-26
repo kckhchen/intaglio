@@ -1,6 +1,6 @@
 import re
 
-from src.patterns import BLOCK_MATH_PATTERN, INLINE_MATH_PATTERN, MATH_ID_PATTERN
+from intaglio.patterns import BLOCK_MATH_PATTERN, INLINE_MATH_PATTERN, MATH_ID_PATTERN
 
 MATHJAX = '<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>'
 

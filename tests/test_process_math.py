@@ -1,6 +1,6 @@
 import pytest
 
-from src.process_math import _fix_math_id, process_math
+from intaglio.process_math import _fix_math_id, process_math
 
 
 class TestMathSyntax:

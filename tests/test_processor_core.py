@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.processor_core import _iter_files, _should_proceed
+from intaglio.processor_core import _iter_files, _should_proceed
 
 
 def test_should_proceed_logic(tmp_path):
@@ -35,7 +35,7 @@ def mock_files_map():
 
 
 def test_iter_files_yields_all_by_default(mock_files_map):
-    with patch("src.processor_core.frontmatter.load", return_value="dummy_post"):
+    with patch("intaglio.processor_core.frontmatter.load", return_value="dummy_post"):
         results = list(_iter_files(mock_files_map, only_file=None))
 
     assert len(results) == 2
@@ -44,7 +44,7 @@ def test_iter_files_yields_all_by_default(mock_files_map):
 
 
 def test_iter_files_filters_single_file(mock_files_map):
-    with patch("src.processor_core.frontmatter.load", return_value="dummy_post"):
+    with patch("intaglio.processor_core.frontmatter.load", return_value="dummy_post"):
         results = list(_iter_files(mock_files_map, only_file="Post B.md"))
 
     assert len(results) == 1

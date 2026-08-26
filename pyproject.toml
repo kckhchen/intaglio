@@ -33,14 +33,14 @@ Homepage = "https://github.com/kckhchen/intaglio"
 Issues = "https://github.com/kckhchen/intaglio/issues"
 
 [project.scripts]
-intaglio = "src.cli:main"
+intaglio = "intaglio.cli:main"
 
 [build-system]
 requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["src"]
+packages = ["intaglio"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

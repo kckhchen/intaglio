@@ -1,9 +1,9 @@
 import re
 import shutil
 
-from src.callout_styles import CALLOUT_CSS
-from src.patterns import IMG_PATTERN
-from src.process_images import image_name
+from intaglio.callout_styles import CALLOUT_CSS
+from intaglio.patterns import IMG_PATTERN
+from intaglio.process_images import image_name
 
 
 def setup_dir(paths, dry):

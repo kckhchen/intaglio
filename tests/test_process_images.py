@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from src.process_images import process_embedded_images
+from intaglio.process_images import process_embedded_images
 
 
 @pytest.fixture

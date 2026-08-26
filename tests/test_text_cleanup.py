@@ -1,4 +1,4 @@
-from src.text_cleanup import (
+from intaglio.text_cleanup import (
     _ensure_table_spacing,
     _process_frontmatter,
     _process_highlights,
