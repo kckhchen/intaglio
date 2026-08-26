@@ -22,7 +22,7 @@
 
 Intaglio scans your Obsidian vault, converts the notes you've marked as shared into Jekyll-compatible posts, and writes them to your site — so your vault stays clean Markdown while Jekyll gets the flavour it expects.
 
-It runs as a CLI, or as a GitHub Action that opens a pull request against your site repository on every push.
+It runs as a GitHub Action that opens a pull request against your site repository on every push, or as a local CLI if you'd rather keep your vault off GitHub.
 
 ## Features
 
@@ -48,51 +48,19 @@ It runs as a CLI, or as a GitHub Action that opens a pull request against your s
 
 ### Prerequisites
 
-- Python 3.10+
+- **For the GitHub Action:** nothing to install.
+- **For the local CLI:** Python 3.10+ and [uv](https://docs.astral.sh/uv/).
 
-### Run the Tool
+### 1. Mark the Posts You Want to Publish
 
-#### 1. Clone this repo
+Add `share: true` and `date: YYYY-MM-DD` to your post's frontmatter ([Obsidian Properties](https://help.obsidian.md/properties)). You can use a [checkbox](https://help.obsidian.md/properties#Checkbox) or [plain text](https://help.obsidian.md/properties#Text) for `share`. `date` will be the publish date displayed on your Jekyll site. Anything else you add (`slug`, `permalink`, and so on) is optional and will be left alone.
 
-```bash
-git clone https://github.com/kckhchen/intaglio.git
-cd intaglio
-```
-
-#### 2. Create a venv and install dependencies
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-# or .\venv\Scripts\activate.bat for Windows
-pip install -r requirements.txt
-```
-
-#### 3. Configure your paths
-
-Create a `.env` in the project root. It is git-ignored, so your personal paths stay out of version control and `git pull` will never conflict.
-
-```bash
-cp .env.example .env
-```
-
-Then edit `.env` to set up paths to your vault and Jekyll site:
-
-```bash
-# .env
-VAULT_DIR="/path/to/obsidian/vault"
-JEKYLL_DIR="/path/to/jekyll/site"
-```
-
-#### 4. Prepare Your Posts
-
-Add `share: true` to your post's frontmatter ([Obsidian Properties](https://help.obsidian.md/properties)). You can use a [checkbox](https://help.obsidian.md/properties#Checkbox) or [plain text](https://help.obsidian.md/properties#Text). You can also add other settings (e.g. `date`, `slug`) to the frontmatter at this stage, although they are not strictly required.
-
-The tool adds `title`, `layout`, and `math` (based on settings) to the frontmatter for you, and grabs the creation date of your post as the `date` if you do not set one, so you don't have to configure these unless you wish to override the settings.
+The tool adds `title`, `layout`, and `math` (based on settings) to the frontmatter for you, so you don't have to configure those unless you want to override them.
 
 ```markdown
 ---
 share: true
+date: 2026-01-01
 ---
 
 # My Post Title
@@ -100,36 +68,92 @@ share: true
 
 Only posts with `share: true` will be processed.
 
-> [!tip]
-> It is still strongly recommended that you set `date` in the frontmatter manually to prevent unexpected updates, since the creation date of a file can potentially change due to file system operations. Also, manually setting `date` allows you to control the displayed post date on the site.
+> [!important]
+> **Set `date` yourself.** The creation date the tool falls back to is not stable and may change on copy, clone, or sync. When it changes, the generated filename changes with it — and so does the post's permalink. The old URL starts returning 404, and every link anyone has already shared to that post breaks. This is also why the GitHub Action refuses to run at all when a shared note has no `date`.
 
-#### 5. Run the command
+### 2. Try It Locally
+
+Before setting anything up on GitHub, run the conversion on your own machine and have a look at the results:
+
+#### Install
 
 ```bash
-# Process new posts
-python3 main.py
-
-# Process posts and clean up deleted posts
-python3 main.py --update
-
-# Process only one post (use only the post name, not the relative path)
-python3 main.py --only "My Post.md"
-
-# For dry run
-python3 main.py --dry
+uv tool install git+https://github.com/kckhchen/intaglio@v1
 ```
 
-Neither your original Obsidian notes nor hand-authored posts on your Jekyll site are ever touched when you run `--update`: cleanup only removes files carrying the tool's own `generator: intaglio` frontmatter marker.
+This installs an `intaglio` command onto your PATH in its own isolated environment. If your shell can't find the command afterwards, run `uv tool update-shell` and open a new terminal.
+
+`@v1` follows the latest 1.x release; use a full tag such as `@v1.5.0` to pin an exact version. To upgrade later:
+
+```bash
+uv tool upgrade --reinstall intaglio
+# or if you prefer pipx:
+# pipx install git+https://github.com/kckhchen/intaglio@v1
+```
+
+#### Point it at your vault
+
+From the root of your **Jekyll site**, create a config file:
+
+```bash
+cd /path/to/jekyll/site
+intaglio init
+```
+
+This writes a commented `.intagliorc`. The only setting you need is the path to your vault:
+
+```bash
+# .intagliorc
+VAULT_DIR="/path/to/obsidian/vault"
+# or exported as environment variable with
+# export VAULT_DIR="/path/to/obsidian/vault"
+```
+
+`JEKYLL_DIR` defaults to wherever `.intagliorc` lives, so you don't need to set it. Run `intaglio` from that directory or any subdirectory of it.
+
+> [!note]
+> `.intagliorc` contains the absolute path to your vault and exposes your username. Consider adding `.intagliorc` to your `.gitignore`, or, if you wish to carry the config file around, you can export `VAULT_DIR` as environment variable.
+
+> [!important]
+> Earlier versions used a `.env` file. It is still read, but is deprecated and will warn on every run. Rename it to `.intagliorc`.
+
+You can override the settings in `.intagliorc` either with environment variables or temporarily with CLI flags. CLI flags takes precedence over everything else. The tool automatically resolves the config. To see which config source is at work for each variable, use the command:
+
+```bash
+intaglio config
+```
+
+#### Preview, then commit
+
+Start with a dry run. It prints every action it would take without changing a single file:
+
+```bash
+intaglio run --dry
+```
+
+Looks good? Drop the flag:
+
+```bash
+intaglio run
+```
 
 > [!note]
 > **A Note on Styling**: The first time you run the tool, it will create `_includes/obsidian-callouts.html` in your Jekyll repository. This file handles the icons and colors for your callouts. Feel free to customize it.
 
 > [!important]
-> If you set up a baseurl for your Jekyll site and found links dead due to duplicate baseurls e.g. `blog/blog/my-post`, switch `PREVENT_DOUBLE_BASEURL` to `True` in `.env`. This could happen for Jekyll 4.x or some special themes.
+> If you set up a baseurl for your Jekyll site and found links dead due to duplicate baseurls e.g. `blog/blog/my-post`, flip `PREVENT_DOUBLE_BASEURL` to `True` in `.intagliorc`. This could happen for Jekyll 4.x or some special themes.
 
-### Actions (Optional)
+### 3. Set Up the Action (Recommended for Ongoing Use)
 
-This tool can be used with GitHub Actions, as long as your vault (or posts) and your Jekyll site are pushed and synced to separate GitHub repos. Once this is setup, your workflow becomes as simple as **"write, commit, push,"** and the Action takes care of the rest and sends a PR to your Jekyll site with all the formatted posts. Follow the steps below:
+Once you like what the tool produces, this is the way to keep it running hassle-free. After setting the things up ,your publishing workflow becomes as simple as **"write, commit, push"**. The Action converts the notes and sends a pull request to your Jekyll site with the formatted posts.
+
+Three things have to be true before you start:
+
+1. **Your vault is a GitHub repository**, and the workflow file lives in it. The Action checks out the calling repository as the vault.
+2. **Your Jekyll site is a separate repository.** A single checkout cannot serve as both source and destination.
+3. **Every shared note has an explicit `date`.** Modification time refreshes on every push, so the Action cannot fall back to it. A shared note without a `date` fails the run on purpose, rather than silently producing an unstable permalink.
+
+If any of those don't suit you, skip ahead to [running the CLI instead](#4-or-keep-using-the-cli).
 
 #### 1. Generate a Fine-Grained Token
 
@@ -156,7 +180,7 @@ jobs:
           token: ${{ secrets.BLOG_PUSH_TOKEN }}
 ```
 
-By default, this publishes new and updated posts only. Posts you delete from your vault will stay on your site. To remove those too, see the sync example below:
+By default, this publishes new and updated posts only. Posts you delete from your vault will stay on your site (we don't want to delete anything without your explicit consent). To remove stale posts and images and sync your vault status, see the sync example below:
 
 ```yaml
 name: Publish
@@ -173,7 +197,7 @@ jobs:
         with:
           jekyll-repo: username/jekyll-repo # your own repo name
           token: ${{ secrets.BLOG_PUSH_TOKEN }}
-          args: --update --force --yes
+          args: update --force --yes
 ```
 
 This will update the posts and remove stale posts and images from your Jekyll site.
@@ -181,13 +205,50 @@ This will update the posts and remove stale posts and images from your Jekyll si
 > [!important]
 > If you set up a baseurl for your Jekyll site and found links dead due to duplicate baseurls e.g. `blog/blog/my-post`, set `prevent-double-baseurl: true` under the `with:` section in your `.yml` file. This could happen for Jekyll 4.x or some special themes. For more information about flags, check out [GUIDE.md](./assets/docs/GUIDE.md).
 
-A few things to note before proceeding with this workflow:
+A few more things worth knowing:
 
-1. The Action **does not** implement incremental builds. Incremental builds rely on file modification time, which refreshes on push. In other words, it effectively uses the `--force` flag every time it runs. It acts exactly the same way as before (nothing affected).
-2. **Dates are mandatory**. As modification time becomes unreliable, it enforces explicit dates in the frontmatter. Failure to comply with this will trigger a delivery stopper.
-3. **Cleanup automatically proceeds**. Without a CLI to prompt for confirmation, `--cleanup` and `--update` rely on the `--yes` flag to automatically proceed. To address this challenge, you can set a `max-deletions` (default to 10) limit that when reached, the process will send a warning, and you can always have a look before merging the PR.
-4. **Your vault and Jekyll site must be separate repositories.** The action checks out both into the runner workspace, and a single checkout cannot serve as both source and destination.
-5. For full configuration, check out [action_config.md](./assets/docs/action_config.md)
+1. Unlike the CLI tool, the Action **does not** implement incremental builds. Incremental builds rely on file modification time, which refreshes on push. In other words, it process every post regardless it's been modified or not, just like the `--force` flag. This would not make any practical difference to your posts though.
+2. **Cleanup automatically proceeds.** With no terminal to prompt at, `update` and `clean` need the `--yes` flag or they abort without deleting anything. To keep that safe, you can set a `max-deletions` (default to 10) limit that when reached, the process will send a warning. Regardless, you can always have a look before merging the PR.
+3. For full configuration, check out [action_config.md](./assets/docs/action_config.md)
+
+### 4. Or Keep Using the CLI
+
+Prefer to keep your vault off GitHub? The tool got ya. The CLI does the same conversion locally, and nothing in your vault ever leaves your machine. Just `cd` to your Jekyll directory and run any of the commands:
+
+```bash
+# Process new posts
+intaglio run
+
+# Process posts and clean up posts deleted from the vault
+intaglio update
+
+# Process only one post (use only the post name, not the relative path)
+intaglio run --only "My Post.md"
+```
+
+Check your `_posts` folder. Like how they look? Push it and publish to the world!
+
+### Available Flags
+
+`intaglio --help` lists every command, and `intaglio <command> --help` lists the flags for one. The full list is in [GUIDE.md](./assets/docs/GUIDE.md).
+
+Neither your original Obsidian notes nor hand-authored posts on your Jekyll site are ever touched when you run `intaglio update`: cleanup only removes files carrying the tool's own `generator: intaglio` frontmatter marker.
+
+> [!note]
+> Running `intaglio` with no command still means `intaglio run`. At a terminal it first shows which vault and site it is about to touch and asks you to confirm; in a script or CI it just runs.
+
+#### Running from source
+
+Use this if you want to modify the tool or run the test suite:
+
+```bash
+git clone https://github.com/kckhchen/intaglio.git
+cd intaglio
+python3 -m venv .venv
+source .venv/bin/activate
+# or .venv\Scripts\activate.bat for Windows
+pip install -e .
+```
 
 ## User Guide
 
