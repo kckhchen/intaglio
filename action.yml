@@ -20,7 +20,11 @@ inputs:
       description: "Token with contents:write and pull-requests:write on jekyll-repo.",
       default: "",
     }
-  args: { description: "Arguments passed to main.py.", default: "--force" }
+  args:
+    {
+      description: "Intaglio command and flags, e.g. 'run --force' or 'update --force --yes'.",
+      default: "run --force",
+    }
   mode:
     {
       description: "'pr' opens or updates a pull request, 'push' commits straight to the default branch, 'none' syncs only.",
@@ -73,7 +77,8 @@ inputs:
       description: "Set to 'true' if your theme already prepends site.baseurl to links.",
       default: "false",
     }
-  python-version: { default: "3.13" }
+  python-version:
+    { description: "Python version used to run Intaglio.", default: "3.13" }
 
 outputs:
   changed:
@@ -112,15 +117,20 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - shell: bash
-      run: pip install --quiet -r "${{ github.action_path }}/requirements.txt"
+    - name: Install Intaglio
+      shell: bash
+      run: |
+        # pinned deps first, then the package itself without re-resolving them
+        pip install --quiet -r "${{ github.action_path }}/requirements.txt"
+        pip install --quiet --no-deps "${{ github.action_path }}"
 
     - name: Require explicit dates
       if: inputs.require-date == 'true'
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.vault-dir }}
       run: |
-        missing=$(grep -rlE '^share:[[:space:]]*true' --include='*.md' . 2>/dev/null \
+        shared='^share:[[:space:]]*["'"'"']?([Tt][Rr][Uu][Ee]|[Yy][Ee][Ss]|[Oo][Nn])["'"'"']?[[:space:]]*$'
+        missing=$(grep -rlE "$shared" --include='*.md' . 2>/dev/null \
                   | xargs -r grep -LE '^date:' || true)
         if [ -n "$missing" ]; then
           echo "::error::Shared notes without an explicit 'date:' would get an unstable"
@@ -142,7 +152,7 @@ runs:
         MATH_RENDERING_MODE: ${{ inputs.math-rendering-mode }}
         PREVENT_DOUBLE_BASEURL: ${{ inputs.prevent-double-baseurl }}
       run: |
-        python main.py ${{ inputs.args }}
+        intaglio ${{ inputs.args }}
         echo "posts=$(find "$JEKYLL_DIR/$POST_FOLDER" -name '*.md' | wc -l)" >> "$GITHUB_OUTPUT"
 
     - name: Optimise images
