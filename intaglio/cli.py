@@ -1,6 +1,9 @@
 import argparse
+import re
+import sys
 from pathlib import Path
 
+from intaglio import __version__
 from intaglio.cleanup import remove_stale_files
 from intaglio.config import RC_NAME, Config
 from intaglio.fs_ops import ensure_css_exists, setup_dir
@@ -35,37 +38,7 @@ RC_TEMPLATE = """\
 """
 
 
-def run(args):
-    if args.init:
-        init_intaglio_rc()
-        return
-
-    cfg = Config.resolve(args)
-
-    if args.show_config:
-        cfg.show()
-        return
-
-    cfg.validate()
-    valid_files = get_valid_files(cfg.vault_dir, cfg.post_dir)
-
-    if not args.cleanup:
-        if args.dry:
-            print("------------ DRY RUN MODE -------------")
-            print("Operations will be printed but files won't be changed.\n")
-
-        print(f"Start processing posts in Vault [ {cfg.vault_dir} ]...")
-        print(f"Destination path: [ {cfg.post_dir} ]\n")
-
-        setup_dir([cfg.post_dir, cfg.img_dir], args.dry)
-        ensure_css_exists("obsidian-callouts.html", cfg, args.dry)
-        process_posts(valid_files, cfg, args.dry, args.layout, args.force, args.only)
-
-    if args.update or args.cleanup:
-        remove_stale_files(valid_files, cfg.post_dir, cfg.img_dir, args.yes)
-
-
-def init_intaglio_rc():
+def cmd_init(args):
     target = Path.cwd() / RC_NAME
     if target.exists():
         print(f"{RC_NAME} already exists at {target}")
@@ -75,103 +48,251 @@ def init_intaglio_rc():
     print("Run intaglio from this directory, or any subdirectory.")
 
 
-def setup_parser():
-    parser = argparse.ArgumentParser(description="Convert Obsidian notes to Jekyll")
+def cmd_config(args):
+    Config.resolve(args).show()
 
-    action_group = parser.add_mutually_exclusive_group()
-    action_group.add_argument(
-        "-c", "--cleanup", action="store_true", help="Clean up stale posts and images."
-    )
-    action_group.add_argument(
-        "-u",
-        "--update",
-        action="store_true",
-        help="Update posts and clean up stale posts and images.",
-    )
 
-    parser.add_argument(
-        "--dry", action="store_true", help="Dry run: simulate without changes."
-    )
-    parser.add_argument(
-        "-f",
-        "--force",
-        action="store_true",
-        help="Processes every file regardless of change states.",
-    )
-    parser.add_argument(
-        "--layout",
-        type=str,
-        default="post",
-        help="Jekyll layout to use (default: post).",
-    )
-    parser.add_argument("--only", default=None, help="Only process the selected post.")
-    parser.add_argument(
-        "--yes",
-        "-y",
-        action="store_true",
-        help="Skip confirmation prompts (for automation).",
-    )
-    parser.add_argument(
-        "--init",
-        action="store_true",
-        help="Create a commented .intagliorc in the current directory.",
-    )
+def cmd_run(args):
+    cfg = _resolved(args)
+    _process(cfg, args)
 
-    config_group = parser.add_argument_group(
+
+def cmd_update(args):
+    cfg = _resolved(args)
+    valid_files = _process(cfg, args)
+    remove_stale_files(valid_files, cfg.post_dir, cfg.img_dir, args.yes)
+
+
+def cmd_clean(args):
+    cfg = _resolved(args)
+    valid_files = get_valid_files(cfg.vault_dir, cfg.post_dir)
+    remove_stale_files(valid_files, cfg.post_dir, cfg.img_dir, args.yes)
+
+
+def _resolved(args):
+    cfg = Config.resolve(args)
+    cfg.validate()
+    return cfg
+
+
+def _process(cfg, args):
+    valid_files = get_valid_files(cfg.vault_dir, cfg.post_dir)
+    dry = getattr(args, "dry", False)
+
+    if dry:
+        print("------------ DRY RUN MODE -------------")
+        print("Operations will be printed but files won't be changed.\n")
+
+    print(f"Start processing posts in Vault [ {cfg.vault_dir} ]...")
+    print(f"Destination path: [ {cfg.post_dir} ]\n")
+
+    setup_dir([cfg.post_dir, cfg.img_dir], dry)
+    ensure_css_exists("obsidian-callouts.html", cfg, dry)
+    process_posts(
+        valid_files, cfg, dry, args.layout, args.force, getattr(args, "only", None)
+    )
+    return valid_files
+
+
+# legacy flag shim
+
+_LEGACY_TOKENS = {
+    "--init": "init",
+    "--show-config": "config",
+    "--cleanup": "clean",
+    "-c": "clean",
+    "--update": "update",
+    "-u": "update",
+}
+
+_LEGACY_SHORT = {"c": "clean", "u": "update"}
+
+_PASSTHROUGH = {"-h", "--help", "--version"}
+
+_GROUPED_SHORT = re.compile(r"-[A-Za-z]{2,}$")
+
+
+def rewrite_legacy(argv):
+    if not argv or not argv[0].startswith("-") or argv[0] in _PASSTHROUGH:
+        return argv
+
+    found = []
+    rest = []
+
+    for token in argv:
+        if token in _LEGACY_TOKENS:
+            found.append(_LEGACY_TOKENS[token])
+            continue
+
+        if _GROUPED_SHORT.match(token):
+            letters = token[1:]
+            verbs = [c for c in letters if c in _LEGACY_SHORT]
+            if verbs:
+                found.extend(_LEGACY_SHORT[c] for c in verbs)
+                leftover = "".join(c for c in letters if c not in _LEGACY_SHORT)
+                if leftover:
+                    rest.append("-" + leftover)
+                continue
+
+        rest.append(token)
+
+    if len(set(found)) > 1:
+        print(
+            f"intaglio: error: {' and '.join(sorted(set(found)))} "
+            "are separate commands and cannot be combined.",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+
+    command = found[0] if found else "run"
+    if command == "init":
+        rest = []
+
+    rewritten = [command, *rest]
+    print(
+        f"warning: `intaglio {' '.join(argv)}` uses the deprecated flag-only form.\n"
+        f"         Use `intaglio {' '.join(rewritten)}` instead. The old form still\n"
+        f"         works and will be removed in a future release.",
+        file=sys.stderr,
+    )
+    return rewritten
+
+
+def _config_options():
+    """Shared config overrides, attached to every command that resolves config."""
+    parser = argparse.ArgumentParser(add_help=False)
+    group = parser.add_argument_group(
         "configuration",
         "Overrides .intagliorc and environment variables.",
     )
-    config_group.add_argument(
-        "--vault", default=None, help="Path to the Obsidian vault."
-    )
-    config_group.add_argument(
+    group.add_argument("--vault", default=None, help="Path to the Obsidian vault.")
+    group.add_argument(
         "--jekyll",
         default=None,
         help="Path to the Jekyll site (defaults to where .intagliorc lives).",
     )
-    config_group.add_argument(
-        "--post-folder", default=None, help="Jekyll posts folder."
-    )
-    config_group.add_argument(
-        "--img-folder", default=None, help="Where images are copied."
-    )
-    config_group.add_argument(
+    group.add_argument("--post-folder", default=None, help="Jekyll posts folder.")
+    group.add_argument("--img-folder", default=None, help="Where images are copied.")
+    group.add_argument(
         "--includes-folder", default=None, help="Jekyll includes folder."
     )
-    config_group.add_argument(
+    group.add_argument(
         "--math-mode",
         default=None,
         choices=["inject_cdn", "metadata"],
         help="How math is rendered.",
     )
-    config_group.add_argument(
+    group.add_argument(
         "--prevent-double-baseurl",
         action="store_const",
         const="true",
         default=None,
         help="Skip site.baseurl if your theme already adds it.",
     )
-    config_group.add_argument(
-        "--show-config",
+    return parser
+
+
+def _add_force(parser):
+    parser.add_argument(
+        "-f",
+        "--force",
         action="store_true",
+        help="Processes every file regardless of change states.",
+    )
+
+
+def _add_layout(parser):
+    parser.add_argument(
+        "--layout",
+        type=str,
+        default="post",
+        help="Jekyll layout to use (default: post).",
+    )
+
+
+def _add_yes(parser):
+    parser.add_argument(
+        "--yes",
+        "-y",
+        action="store_true",
+        help="Skip confirmation prompts (for automation).",
+    )
+
+
+def setup_parser():
+    parser = argparse.ArgumentParser(
+        prog="intaglio", description="Convert Obsidian notes to Jekyll"
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"intaglio {__version__}"
+    )
+
+    commands = parser.add_subparsers(dest="command")
+    config_options = _config_options()
+
+    run = commands.add_parser(
+        "run",
+        parents=[config_options],
+        help="Process vault posts into the Jekyll site.",
+    )
+    run.add_argument(
+        "--dry", action="store_true", help="Dry run: simulate without changes."
+    )
+    _add_force(run)
+    _add_layout(run)
+    run.add_argument("--only", default=None, help="Only process the selected post.")
+    run.set_defaults(func=cmd_run)
+
+    update = commands.add_parser(
+        "update",
+        parents=[config_options],
+        help="Process posts, then clean up stale posts and images.",
+    )
+    _add_force(update)
+    _add_layout(update)
+    _add_yes(update)
+    update.set_defaults(func=cmd_update)
+
+    clean = commands.add_parser(
+        "clean",
+        parents=[config_options],
+        help="Clean up stale posts and images.",
+    )
+    _add_yes(clean)
+    clean.set_defaults(func=cmd_clean)
+
+    init = commands.add_parser(
+        "init", help=f"Create a commented {RC_NAME} in the current directory."
+    )
+    init.set_defaults(func=cmd_init)
+
+    config = commands.add_parser(
+        "config",
+        parents=[config_options],
         help="Print resolved settings with their source, then exit.",
     )
+    config.set_defaults(func=cmd_config)
 
     return parser
 
 
 def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
     parser = setup_parser()
-    args = parser.parse_args(argv)
 
-    if args.dry and (args.cleanup or args.update):
-        parser.error("--dry cannot be combined with --cleanup or --update.")
+    if not argv:
+        parser.print_help()
+        return 2
 
-    if args.only and (args.cleanup or args.update):
-        parser.error("--only cannot be combined with --cleanup or --update.")
+    args = parser.parse_args(rewrite_legacy(argv))
 
-    run(args)
+    if not getattr(args, "func", None):
+        parser.print_help()
+        return 2
+
+    args.func(args)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
