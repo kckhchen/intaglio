@@ -70,7 +70,9 @@ def cmd_clean(args):
 
 
 def _resolved(args):
-    cfg = Config.resolve(args)
+    # a bare invocation already resolved the config to show it in the prompt;
+    # resolving twice would repeat every warning Config.resolve() prints
+    cfg = getattr(args, "preresolved_cfg", None) or Config.resolve(args)
     cfg.validate()
     return cfg
 
@@ -241,6 +243,9 @@ def setup_parser():
     _add_force(run)
     _add_layout(run)
     run.add_argument("--only", default=None, help="Only process the selected post.")
+    # run never prompts, so this is accepted and ignored — as it was before
+    # subcommands, when --yes was a top-level flag the default action ignored
+    _add_yes(run)
     run.set_defaults(func=cmd_run)
 
     update = commands.add_parser(
@@ -276,19 +281,70 @@ def setup_parser():
     return parser
 
 
+BARE_DEPRECATION = "Running intaglio with no command is deprecated; use `intaglio run`."
+
+
+def _bare_invocation(parser):
+    """Decide what a bare `intaglio` does.
+
+    It still means `run`, so cron jobs and the Action keep working. But a
+    human at a terminal is usually just poking at the tool to see what it
+    is, so ask before touching their vault.
+
+    Returns (argv, exit_code, cfg); argv is None when nothing should run.
+    """
+    cfg = Config.resolve(None)
+
+    if cfg.vault_dir is None or cfg.jekyll_dir is None:
+        parser.print_help()
+        sys.stdout.flush()
+        print(
+            f"\nNo vault configured yet. Run `intaglio init` to create a "
+            f"{RC_NAME}, or pass --vault explicitly.",
+            file=sys.stderr,
+        )
+        return None, 2, None
+
+    if not sys.stdin.isatty():
+        print(f"warning: {BARE_DEPRECATION}", file=sys.stderr)
+        return ["run"], 0, cfg
+
+    print("This will process posts from")
+    print(f"  vault:  {cfg.vault_dir}")
+    print(f"  site:   {cfg.jekyll_dir}")
+    print(f"\n{BARE_DEPRECATION}")
+
+    try:
+        answer = input("Continue? [y/N]: ")
+    except (EOFError, KeyboardInterrupt):
+        answer = ""
+        print()
+
+    if answer.strip().lower() not in {"y", "yes"}:
+        print("Aborted.")
+        return None, 0, None
+
+    return ["run"], 0, cfg
+
+
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     parser = setup_parser()
 
+    cfg = None
     if not argv:
-        parser.print_help()
-        return 2
+        argv, code, cfg = _bare_invocation(parser)
+        if argv is None:
+            return code
 
     args = parser.parse_args(rewrite_legacy(argv))
 
     if not getattr(args, "func", None):
         parser.print_help()
         return 2
+
+    if cfg is not None:
+        args.preresolved_cfg = cfg
 
     args.func(args)
     return 0

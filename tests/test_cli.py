@@ -2,10 +2,6 @@ import pytest
 
 from intaglio import cli
 
-# ---------------------------------------------------------------------------
-# subcommand routing
-# ---------------------------------------------------------------------------
-
 
 @pytest.mark.parametrize(
     "argv, expected",
@@ -184,3 +180,113 @@ def test_version_flag_reports_a_version(capsys):
         cli.setup_parser().parse_args(["--version"])
     assert exc.value.code == 0
     assert "intaglio" in capsys.readouterr().out
+
+
+# bare invocation
+
+
+class _Cfg:
+    def __init__(self, vault="/v", jekyll="/j"):
+        self.vault_dir = vault
+        self.jekyll_dir = jekyll
+
+
+@pytest.fixture
+def bare(monkeypatch):
+    """Bare `intaglio` with a stub config, a stub tty, and cmd_run disarmed."""
+    state = {"resolves": 0, "ran": None, "tty": True, "answer": "", "cfg": _Cfg()}
+
+    def resolve(args=None, **kwargs):
+        state["resolves"] += 1
+        return state["cfg"]
+
+    monkeypatch.setattr(cli.Config, "resolve", staticmethod(resolve))
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: state["tty"])
+    monkeypatch.setattr("builtins.input", lambda _="": state["answer"])
+    monkeypatch.setattr(cli, "cmd_run", lambda args: state.update(ran=args))
+    return state
+
+
+def test_bare_without_config_shows_help(bare, capsys):
+    bare["cfg"] = _Cfg(vault=None, jekyll=None)
+
+    assert cli.main([]) == 2
+
+    captured = capsys.readouterr()
+    assert "usage: intaglio" in captured.out
+    assert "intaglio init" in captured.err
+    assert bare["ran"] is None
+
+
+def test_bare_on_a_tty_asks_before_touching_the_vault(bare, capsys):
+    bare["answer"] = "n"
+
+    assert cli.main([]) == 0
+
+    out = capsys.readouterr().out
+    assert "/v" in out and "/j" in out
+    assert "Aborted." in out
+    assert bare["ran"] is None
+
+
+@pytest.mark.parametrize("answer", ["y", "Y", "yes", " y "])
+def test_bare_on_a_tty_runs_when_confirmed(bare, answer):
+    bare["answer"] = answer
+
+    assert cli.main([]) == 0
+    assert bare["ran"] is not None
+
+
+@pytest.mark.parametrize("answer", ["", "n", "no", "maybe", "q"])
+def test_bare_on_a_tty_defaults_to_no(bare, answer):
+    bare["answer"] = answer
+
+    assert cli.main([]) == 0
+    assert bare["ran"] is None
+
+
+@pytest.mark.parametrize("interrupt", [EOFError, KeyboardInterrupt])
+def test_bare_treats_ctrl_c_and_ctrl_d_as_no(bare, monkeypatch, capsys, interrupt):
+    def raise_it(_=""):
+        raise interrupt
+
+    monkeypatch.setattr("builtins.input", raise_it)
+
+    assert cli.main([]) == 0
+    assert "Aborted." in capsys.readouterr().out
+    assert bare["ran"] is None
+
+
+def test_bare_without_a_tty_runs_unattended(bare, capsys):
+    # cron, CI and the Action: no prompt, same behaviour as before subcommands
+    bare["tty"] = False
+    bare["answer"] = "n"  # would abort if it were ever asked
+
+    assert cli.main([]) == 0
+    assert bare["ran"] is not None
+    assert "deprecated" in capsys.readouterr().err
+
+
+def test_bare_resolves_config_only_once(bare):
+    bare["answer"] = "y"
+    cli.main([])
+    assert bare["resolves"] == 1
+
+
+def test_bare_hands_the_resolved_config_to_run(bare):
+    bare["answer"] = "y"
+    cli.main([])
+    assert bare["ran"].preresolved_cfg is bare["cfg"]
+
+
+def test_explicit_run_never_prompts(bare):
+    bare["answer"] = "n"  # would abort a bare invocation
+
+    assert cli.main(["run"]) == 0
+    assert bare["ran"] is not None
+
+
+def test_run_accepts_yes_for_backward_compatibility():
+    args = cli.setup_parser().parse_args(["run", "--yes"])
+    assert args.yes is True
+    assert cli.rewrite_legacy(["--yes"]) == ["run", "--yes"]
