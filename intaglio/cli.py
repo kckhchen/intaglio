@@ -1,13 +1,45 @@
 import argparse
+from pathlib import Path
 
 from intaglio.cleanup import remove_stale_files
-from intaglio.config import Config
+from intaglio.config import RC_NAME, Config
 from intaglio.fs_ops import ensure_css_exists, setup_dir
 from intaglio.processor_core import process_posts
 from intaglio.utils import get_valid_files
 
+RC_TEMPLATE = """\
+# Intaglio configuration file. This defines JEKYLL_DIR
+# i.e., Intaglio sends your processed posts here.
+# You can left them all commented if you don't want to change any config.
+
+# Absolute path to your Obsidian vault.
+# NOTE: This absoluate vault includes your user name,
+# either consider exporting VAULT_DIR as environment variable:
+#   export VAULT_DIR=~/Obsidian/vault
+# or set it up here, but add .intagliorc to your .gitignore
+# VAULT_DIR="/path/to/your/vault"
+
+# Everything below has a default value.
+# Please leave them commented if you don't wish to change them.
+# POST_FOLDER="_posts"
+# IMG_FOLDER="assets/images/obsidian"
+# INCLUDES_FOLDER="_includes"
+
+# "inject_cdn" injects a MathJax CDN when math is detected to be present
+# "metadata" includes "math: true" in the frontmatter if your theme supports math natively.
+# MATH_RENDERING_MODE="inject_cdn"
+
+# If your theme or Jekyll 4.x includes site.baseurl,
+# set this to "true" to prevent double baseurl like "/blog/blog/..."
+# PREVENT_DOUBLE_BASEURL="false"
+"""
+
 
 def run(args):
+    if args.init:
+        init_intaglio_rc()
+        return
+
     cfg = Config.resolve(args)
 
     if args.show_config:
@@ -31,6 +63,16 @@ def run(args):
 
     if args.update or args.cleanup:
         remove_stale_files(valid_files, cfg.post_dir, cfg.img_dir, args.yes)
+
+
+def init_intaglio_rc():
+    target = Path.cwd() / RC_NAME
+    if target.exists():
+        print(f"{RC_NAME} already exists at {target}")
+        return
+    target.write_text(RC_TEMPLATE, encoding="utf-8")
+    print(f"Created {target}")
+    print("Run intaglio from this directory, or any subdirectory.")
 
 
 def setup_parser():
@@ -68,6 +110,11 @@ def setup_parser():
         "-y",
         action="store_true",
         help="Skip confirmation prompts (for automation).",
+    )
+    parser.add_argument(
+        "--init",
+        action="store_true",
+        help="Create a commented .intagliorc in the current directory.",
     )
 
     config_group = parser.add_argument_group(
