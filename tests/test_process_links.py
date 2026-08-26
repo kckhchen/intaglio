@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from src.process_links import process_wikilinks
+from intaglio.process_links import process_wikilinks
 
 
 @pytest.fixture

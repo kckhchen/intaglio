@@ -2,12 +2,14 @@ from unittest.mock import patch
 
 import pytest
 
-from src.process_callouts import process_callouts
+from intaglio.process_callouts import process_callouts
 
 
 @pytest.fixture(autouse=True)
 def mock_icons():
-    with patch("src.process_callouts.ICONS", {"note": "pen", "others": "star"}) as m:
+    with patch(
+        "intaglio.process_callouts.ICONS", {"note": "pen", "others": "star"}
+    ) as m:
         yield m
 
 

@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from src.patterns import IMG_EXT, IMG_PATTERN
+from intaglio.patterns import IMG_EXT, IMG_PATTERN
 
 
 def process_embedded_images(post, img_map, destination):

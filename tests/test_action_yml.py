@@ -75,7 +75,7 @@ def test_python_settings_are_passed_to_sync(action):
 
 
 def test_config_keys_match_action_inputs():
-    cfg = (REPO / "src" / "config.py").read_text(encoding="utf-8")
+    cfg = (REPO / "intaglio" / "config.py").read_text(encoding="utf-8")
     known = set(re.findall(r'^\s+"([A-Z_]+)",$', cfg, re.MULTILINE))
     action = yaml.safe_load(ACTION.read_text(encoding="utf-8"))
     sync = next(s for s in action["runs"]["steps"] if s.get("id") == "sync")

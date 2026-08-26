@@ -1,10 +1,10 @@
 import argparse
 
-from src.cleanup import remove_stale_files
-from src.config import Config
-from src.fs_ops import ensure_css_exists, setup_dir
-from src.processor_core import process_posts
-from src.utils import get_valid_files
+from intaglio.cleanup import remove_stale_files
+from intaglio.config import Config
+from intaglio.fs_ops import ensure_css_exists, setup_dir
+from intaglio.processor_core import process_posts
+from intaglio.utils import get_valid_files
 
 
 def run(args):

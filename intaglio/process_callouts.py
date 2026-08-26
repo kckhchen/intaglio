@@ -1,7 +1,7 @@
 import re
 
-from src.callout_styles import ICONS
-from src.patterns import CALLOUT_PATTERN, FENCE_IN_BODY
+from intaglio.callout_styles import ICONS
+from intaglio.patterns import CALLOUT_PATTERN, FENCE_IN_BODY
 
 
 def process_callouts(post):

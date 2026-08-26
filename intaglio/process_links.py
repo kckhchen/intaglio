@@ -1,8 +1,8 @@
 import re
 from pathlib import Path
 
-from src.patterns import ANCHOR_PATTERN, LINK_PATTERN, PLACEHOLDER_PATTERN
-from src.utils import slugify
+from intaglio.patterns import ANCHOR_PATTERN, LINK_PATTERN, PLACEHOLDER_PATTERN
+from intaglio.utils import slugify
 
 
 def process_wikilinks(post, files, destination, prevent_double_baseurl):

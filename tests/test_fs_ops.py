@@ -3,10 +3,10 @@ from pathlib import Path
 import frontmatter
 import pytest
 
-from src.callout_styles import CALLOUT_CSS
-from src.config import Config
-from src.fs_ops import copy_images, ensure_css_exists, setup_dir
-from src.process_images import process_embedded_images
+from intaglio.callout_styles import CALLOUT_CSS
+from intaglio.config import Config
+from intaglio.fs_ops import copy_images, ensure_css_exists, setup_dir
+from intaglio.process_images import process_embedded_images
 
 
 @pytest.fixture

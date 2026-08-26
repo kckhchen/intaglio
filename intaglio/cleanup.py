@@ -2,7 +2,8 @@ import re
 from pathlib import Path
 
 import frontmatter
-from src.patterns import IMG_EXT, IMG_LINK_PATTERN, POST_NAME_PATTERN
+
+from intaglio.patterns import IMG_EXT, IMG_LINK_PATTERN, POST_NAME_PATTERN
 
 SHARED_LOOKING = {"images", "img", "assets", "media", "static", "uploads", "files"}
 

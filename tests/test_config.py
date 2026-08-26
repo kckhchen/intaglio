@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from src.config import Config, find_rc
+from intaglio.config import Config, find_rc
 
 
 def args(**kw):

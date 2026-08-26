@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.cleanup import (
+from intaglio.cleanup import (
     _get_post_images,
     _is_managed,
     _list_imgs_to_be_removed,
@@ -160,7 +160,7 @@ class TestFullFlow:
         valid_files = {"valid": {"dest_path": valid_dest}}
 
         with patch("builtins.input", return_value="y"):
-            mock_get_post_images = mocker.patch("src.cleanup._get_post_images")
+            mock_get_post_images = mocker.patch("intaglio.cleanup._get_post_images")
             mock_get_post_images.return_value = {"used_image.png"}
             remove_stale_files(valid_files, post_dir, img_dir, assume_yes=False)
 
