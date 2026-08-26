@@ -27,6 +27,7 @@ def process_posts(files, cfg, dry, layout, force, only=None):
 
             if reason:
                 print(f"{reason}: {Path(src.parent.name) / src.name} -> {dest.name}")
+                _warn_about_fallback_date(post, dest)
 
                 if not dry:
                     post, code_blocks = shield_content(post, mode="code")
@@ -60,6 +61,16 @@ def process_posts(files, cfg, dry, layout, force, only=None):
             continue
 
     print(f"\nProcessing finished. Skipped {skipped} unchanged files.")
+
+
+def _warn_about_fallback_date(post, dest):
+    if post.get("date"):
+        return
+
+    # the fallback branch of _get_dest_fpath always produces YYYY-MM-DD, so the
+    # date it settled on is the front of the destination name
+    print("  |  Note: no date in frontmatter, using the file's creation date.")
+    print(f"  |        Add `date: {dest.name[:10]}` to keep this permalink stable.")
 
 
 def _should_proceed(src, dest, force):
