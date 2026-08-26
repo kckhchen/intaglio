@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 import frontmatter
-
 from src.fs_ops import copy_images
 from src.patterns import IMG_EXT
 from src.process_callouts import process_callouts
