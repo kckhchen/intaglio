@@ -77,7 +77,7 @@ def test_invalid_flag_combos_are_rejected(cli, args):
 
 
 def test_missing_vault_exits_nonzero(cli, tmp_path):
-    r = cli.run(vault=tmp_path / "does-not-exist")
+    r = cli.run("run", vault=tmp_path / "does-not-exist")
     assert r.returncode == 1
     assert "VAULT_DIR" in r.stdout + r.stderr
 
