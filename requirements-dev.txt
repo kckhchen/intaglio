@@ -4,3 +4,4 @@ pytest-cov==7.0.0
 pytest-mock==3.15.1
 pytest-spec==5.2.0
 ruff==0.16.1
+build>=1.0
