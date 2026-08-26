@@ -2,6 +2,10 @@
 __pycache__/
 .vscode/
 .env
+.intagliorc
 .venv/
 .ruff_cache/
 .pytest_cache/
+build/
+dist/
+*.egg-info/
