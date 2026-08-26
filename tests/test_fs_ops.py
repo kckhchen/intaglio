@@ -4,14 +4,14 @@ import frontmatter
 import pytest
 
 from src.callout_styles import CALLOUT_CSS
+from src.config import Config
 from src.fs_ops import copy_images, ensure_css_exists, setup_dir
 from src.process_images import process_embedded_images
 
 
 @pytest.fixture
 def css_mock(tmp_path, monkeypatch):
-    monkeypatch.setattr("src.fs_ops.INCLUDES_FOLDER", "_includes")
-    monkeypatch.setattr("src.fs_ops.JEKYLL_DIR", str(tmp_path))
+    return Config(vault_dir=tmp_path / "vault", jekyll_dir=tmp_path)
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def test_ensure_css_exists_writes_file(css_mock, tmp_path):
     css_name = "test-callouts.css"
     expected_path = tmp_path / "_includes" / css_name
 
-    ensure_css_exists(css_name, dry=False)
+    ensure_css_exists(css_name, css_mock, dry=False)
 
     assert expected_path.exists()
 
@@ -65,7 +65,7 @@ def test_ensure_css_skips_if_already_exists(tmp_path, css_mock, capsys):
 
     (includes / css_name).write_text("OLD CONTENT", encoding="utf-8")
 
-    ensure_css_exists(css_name, dry=False)
+    ensure_css_exists(css_name, css_mock, dry=False)
 
     assert (includes / css_name).read_text(encoding="utf-8") == "OLD CONTENT"
 

@@ -1,9 +1,7 @@
 import re
 import shutil
-from pathlib import Path
 
 from src.callout_styles import CALLOUT_CSS
-from src.config import INCLUDES_FOLDER, JEKYLL_DIR
 from src.patterns import IMG_PATTERN
 from src.process_images import image_name
 
@@ -16,8 +14,8 @@ def setup_dir(paths, dry):
                 path.mkdir(parents=True, exist_ok=True)
 
 
-def ensure_css_exists(css_name, dry):
-    includes_dir = Path(JEKYLL_DIR) / INCLUDES_FOLDER
+def ensure_css_exists(css_name, cfg, dry):
+    includes_dir = cfg.includes_dir
     css_path = includes_dir / css_name
     if not css_path.exists():
         print(f"---- Creating default callout CSS at: {css_path} ----")
