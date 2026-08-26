@@ -4,14 +4,6 @@ from pathlib import Path
 
 import frontmatter
 
-from src.config import (
-    IMG_DIR,
-    IMG_FOLDER,
-    MATH_RENDERING_MODE,
-    POST_FOLDER,
-    PREVENT_DOUBLE_BASEURL,
-    VAULT_DIR,
-)
 from src.fs_ops import copy_images
 from src.patterns import IMG_EXT
 from src.process_callouts import process_callouts
@@ -22,7 +14,7 @@ from src.text_cleanup import text_cleanup
 from src.utils import shield_content, shield_liquid, unshield
 
 
-def process_posts(files, dry, layout, force, only=None):
+def process_posts(files, cfg, dry, layout, force, only=None):
     if only:
         stem = Path(only).stem
         if stem not in files:
@@ -42,11 +34,11 @@ def process_posts(files, dry, layout, force, only=None):
                     post, math_blocks = shield_content(post, mode="math")
 
                     post = text_cleanup(post, layout)
-                    img_map = _build_img_map(VAULT_DIR)
-                    copy_images(post, img_map, IMG_DIR)
-                    post = process_embedded_images(post, img_map, IMG_FOLDER)
+                    img_map = _build_img_map(cfg.vault_dir)
+                    copy_images(post, img_map, cfg.img_dir)
+                    post = process_embedded_images(post, img_map, cfg.img_folder)
                     post = process_wikilinks(
-                        post, files, POST_FOLDER, PREVENT_DOUBLE_BASEURL
+                        post, files, cfg.post_folder, cfg.prevent_double_baseurl
                     )
                     post = process_callouts(post)
 
@@ -55,7 +47,7 @@ def process_posts(files, dry, layout, force, only=None):
                         math_blocks,
                         lambda x: shield_liquid(re.sub(r"\|", r" \\vert ", x)),
                     )
-                    post = process_math(post, MATH_RENDERING_MODE)
+                    post = process_math(post, cfg.math_rendering_mode)
 
                     post = unshield(post, url_blocks)
                     post = unshield(post, code_blocks, shield_liquid)
