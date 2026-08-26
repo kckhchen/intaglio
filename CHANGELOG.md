@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.0](https://github.com/kckhchen/intaglio/compare/v1.3.1...v1.4.0) (2026-08-26)
+
+
+### Features
+
+* add cli.py to separate flag parsing from main ([16117bd](https://github.com/kckhchen/intaglio/commit/16117bdb03028d0acb4ab6d8cd093d690f7a1607))
+* add intagliorc init functionality ([c90d328](https://github.com/kckhchen/intaglio/commit/c90d328b21de54487f2f7bd2524b87bae53eb5e0))
+* add legacy support for bare commands ([6c6e774](https://github.com/kckhchen/intaglio/commit/6c6e774a921634f775076a6c768127563565a704))
+* add missing date warning ([4ba84e1](https://github.com/kckhchen/intaglio/commit/4ba84e1cd5cde6f21adba2cc6c114ad2a7659144))
+* change some flags to subpraser with legacy support ([31c65c9](https://github.com/kckhchen/intaglio/commit/31c65c97695791d6b2792674eebcb03c9dfdd484))
+* update action.yml to reflect packaging ([0248e70](https://github.com/kckhchen/intaglio/commit/0248e701c9dde0954f2232cc593cd5b5f0ef3a85))
+* update config.py to include .intagliorc support ([76b6f12](https://github.com/kckhchen/intaglio/commit/76b6f12a2beef34173c0e5337e051d7dcd33e31c))
+
+
+### Bug Fixes
+
+* prevent traceback printing when ctrl+c on cleanup confirmation ([bdf4df0](https://github.com/kckhchen/intaglio/commit/bdf4df036aba29879b15044317b47222018ecb80))
+
 ## [1.3.1](https://github.com/kckhchen/intaglio/compare/v1.3.0...v1.3.1) (2026-08-23)
 
 
