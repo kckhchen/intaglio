@@ -14,7 +14,7 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def cli(tmp_path):
-    # temp vault + jekyll dir to run main.py"""
+    # temp vault + jekyll dir to run the intaglio CLI"""
 
     class CLI:
         def __init__(self):
@@ -45,7 +45,7 @@ def cli(tmp_path):
                 "PREVENT_DOUBLE_BASEURL": "false",
             }
             return subprocess.run(
-                [sys.executable, "main.py", *args],
+                [sys.executable, "-m", "intaglio", *args],
                 cwd=REPO,
                 env=env,
                 input=stdin,
@@ -60,12 +60,11 @@ def cli(tmp_path):
 
 
 REJECTED = [
-    pytest.param(["--dry", "--cleanup"], id="dry+cleanup"),
-    pytest.param(["--dry", "--update"], id="dry+update"),
-    pytest.param(["--only", "a.md", "--cleanup"], id="only+cleanup"),
-    pytest.param(["--only", "a.md", "--update"], id="only+update"),
-    pytest.param(["--cleanup", "--update"], id="cleanup+update"),
-    pytest.param(["--nonexistent-flag"], id="unknown-flag"),
+    pytest.param(["update", "--dry"], id="update+dry"),
+    pytest.param(["clean", "--dry"], id="clean+dry"),
+    pytest.param(["update", "--only", "a.md"], id="update+only"),
+    pytest.param(["clean", "--only", "a.md"], id="clean+only"),
+    pytest.param(["run", "--nonexistent-flag"], id="unknown-flag"),
 ]
 
 
@@ -84,7 +83,7 @@ def test_missing_vault_exits_nonzero(cli, tmp_path):
 
 def test_only_with_unshared_file_fails_cleanly(cli):
     cli.note("unshared.md", share=False, date="2013-01-01")
-    r = cli.run("--only", "unshared.md")
+    r = cli.run("run", "--only", "unshared.md")
 
     assert r.returncode != 0
     assert "Traceback" not in r.stderr
@@ -93,7 +92,7 @@ def test_only_with_unshared_file_fails_cleanly(cli):
 
 def test_dry_writes_nothing(cli):
     cli.note("a.md", date="2013-01-01")
-    cli.run("--dry")
+    cli.run("run", "--dry")
     assert list(cli.posts.iterdir()) == []
     assert list(cli.images.iterdir()) == []
     assert not (cli.jekyll / "_includes" / "obsidian-callouts.html").exists()
@@ -101,17 +100,17 @@ def test_dry_writes_nothing(cli):
 
 def test_cleanup_abort_removes_nothing(cli):
     cli.note("a.md", date="2013-01-01")
-    cli.run("--force")
-    cli.run("--cleanup", stdin="n\n")
+    cli.run("run", "--force")
+    cli.run("clean", stdin="n\n")
     assert (cli.posts / "2013-01-01-a.md").exists()
 
 
 def test_running_twice_is_idempotent(cli):
     body = "$$x$$\n> [!note] Callout Title\n> Callout Content\n\n==highlight=="
     cli.note("a.md", body=body, date="2013-01-01")
-    cli.run("--force")
+    cli.run("run", "--force")
     first = {p.name: p.read_text() for p in cli.posts.iterdir()}
-    cli.run("--force")
+    cli.run("run", "--force")
     second = {p.name: p.read_text() for p in cli.posts.iterdir()}
     output = cli.posts / "2013-01-01-a.md"
     content = output.read_text()
@@ -120,3 +119,20 @@ def test_running_twice_is_idempotent(cli):
     assert "<mark>" in content
     assert r"{% include" in content
     assert first == second
+
+
+# legacy flag-only form — drop these when rewrite_legacy() is removed
+
+
+def test_legacy_flags_still_run_with_deprecation_warning(cli):
+    cli.note("a.md", date="2013-01-01")
+    r = cli.run("--dry")
+    assert r.returncode == 0
+    assert "deprecated" in r.stderr
+    assert list(cli.posts.iterdir()) == []
+
+
+def test_legacy_command_flags_cannot_be_combined(cli):
+    r = cli.run("--cleanup", "--update")
+    assert r.returncode == 2
+    assert not list(cli.posts.iterdir())

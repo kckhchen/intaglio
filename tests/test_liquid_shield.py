@@ -15,7 +15,9 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def run_pipeline(tmp_path):
-    def _run(body, *, date="2026-01-01", stem="note", args=("--force",), env=None):
+    def _run(
+        body, *, date="2026-01-01", stem="note", args=("run", "--force"), env=None
+    ):
         vault = tmp_path / "vault"
         site = tmp_path / "site"
         for d in (
@@ -43,7 +45,7 @@ def run_pipeline(tmp_path):
         }
 
         r = subprocess.run(
-            [sys.executable, "main.py", *args],
+            [sys.executable, "-m", "intaglio", *args],
             cwd=REPO,
             env=full_env,
             input="",
