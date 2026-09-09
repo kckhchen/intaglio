@@ -49,10 +49,10 @@ def vault(tmp_path):
     return v
 
 
-def note(vault, name, share=True, date: str | None = "2026-01-15"):
+def note(vault, name, share="true", date: str | None = "2026-01-15"):
     fm = "---\n"
     if share:
-        fm += "share: true\n"
+        fm += f"share: {share}\n"
     if date:
         fm += f"date: {date}\n"
     (vault / name).write_text(fm + "---\nContent\n", encoding="utf-8")
@@ -72,6 +72,31 @@ def test_date_check_fails_on_missing_date(vault):
     r = run_bash(step_script("Require explicit dates"), vault)
     assert r.returncode == 1
     assert "bad.md" in r.stdout
+
+
+@pytest.mark.parametrize("spelling", ["true", "True", "TRUE", "yes", "on", '"true"'])
+def test_date_check_covers_every_truthy_share_value(vault, spelling):
+    # intaglio publishes anything YAML reads as true, so a guard that only knows
+    # `share: true` lets dateless notes through with an unstable permalink
+    note(vault, "bad.md", share=spelling, date=None)
+    r = run_bash(step_script("Require explicit dates"), vault)
+    assert r.returncode == 1, f"share: {spelling} escaped the date check"
+    assert "bad.md" in r.stdout
+
+
+@pytest.mark.parametrize("spelling", ["false", "False", "no", "off"])
+def test_date_check_leaves_unshared_spellings_alone(vault, spelling):
+    note(vault, "private.md", share=spelling, date=None)
+    r = run_bash(step_script("Require explicit dates"), vault)
+    assert r.returncode == 0, f"share: {spelling} should not be treated as shared"
+
+
+def test_date_check_is_case_sensitive_about_the_key(vault):
+    # frontmatter lookups are case-sensitive, so `Share:` is never published —
+    # flagging it would fail runs over notes the tool ignores
+    (vault / "odd.md").write_text("---\nShare: true\n---\nContent\n", encoding="utf-8")
+    r = run_bash(step_script("Require explicit dates"), vault)
+    assert r.returncode == 0
 
 
 def test_date_check_ignores_unshared_notes(vault):
