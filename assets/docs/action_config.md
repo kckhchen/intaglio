@@ -1,5 +1,47 @@
 # Actions Configuration
 
+## Before You Start
+
+Three things have to be true before you start:
+
+1. **Your vault is a GitHub repository**, and the workflow file lives in it. The Action checks out the calling repository as the vault.
+2. **Your Jekyll site is a separate repository.** A single checkout cannot serve as both source and destination.
+3. **Every shared note has an explicit `date`.** Modification time refreshes on every push, so the Action cannot fall back to it. A shared note without a `date` fails the run on purpose, rather than silently producing an unstable permalink.
+
+If any of those don't suit you, [run the CLI locally instead](../../README.md#3-set-up-the-action).
+
+## Removing Deleted Posts
+
+By default, this publishes new and updated posts only. Posts you delete from your vault will stay on your site (we don't want to delete anything without your explicit consent). To remove stale posts and images and sync your vault status, see the sync example below:
+
+```yaml
+name: Publish
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: kckhchen/intaglio@v1
+        with:
+          jekyll-repo: username/jekyll-repo # your own repo name
+          token: ${{ secrets.BLOG_PUSH_TOKEN }}
+          args: update --force --yes
+```
+
+This will update the posts and remove stale posts and images from your Jekyll site.
+
+## Good to Know
+
+A few more things worth knowing:
+
+1. Unlike the CLI tool, the Action **does not** implement incremental builds. Incremental builds rely on file modification time, which refreshes on push. In other words, it process every post regardless it's been modified or not, just like the `--force` flag. This would not make any practical difference to your posts though.
+2. **Cleanup automatically proceeds.** With no terminal to prompt at, `update` and `clean` need the `--yes` flag or they abort without deleting anything. To keep that safe, you can set a `max-deletions` (default to 10) limit that when reached, the process will send a warning. Regardless, you can always have a look before merging the PR.
+3. For full configuration, check out the [tables below](#available-config)
+
 ## Available Config
 
 The following are all the available configuration you can use with `with:` when setting up your custom GitHub Actions:

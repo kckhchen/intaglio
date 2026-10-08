@@ -3,11 +3,12 @@
 ## Table of Contents
 
 1. [Writing Guidelines](#writing-guidelines)
-2. [Advanced Configurations](#advanced-configurations)
+2. [Installation and Setup](#installation-and-setup)
+3. [Advanced Configurations](#advanced-configurations)
    - [CLI Commands](#cli-commands)
    - [Running With No Command](#running-with-no-command)
    - [Environment Variables](#environment-variables)
-3. [How it Works](#what-this-tool-does)
+4. [How it Works](#what-this-tool-does)
    - [Frontmatter](#1-adds-title-and-layout-to-frontmatter)
    - [Dates & Renaming](#2-prepends-dates-before-file-names)
    - [Images](#3-copies-associated-images-to-a-dedicated-folder-and-updates-embedded-image-links)
@@ -22,6 +23,61 @@ Just write normally! You don't need to manually configure the frontmatter, beyon
 Set `date` yourself rather than letting the tool fall back to the file's creation date. [See below](#2-prepends-dates-before-file-names) for what might go wrong otherwise.
 
 If you wish, you can add additional settings or override the default in the frontmatter. Your configurations such as `title`, `date`, `slug`, or `permalink` will not be overridden by this tool.
+
+## Installation and Setup
+
+### Install
+
+```bash
+uv tool install git+https://github.com/kckhchen/intaglio@v1
+```
+
+This installs an `intaglio` command onto your PATH in its own isolated environment. If your shell can't find the command afterwards, run `uv tool update-shell` and open a new terminal.
+
+`@v1` follows the latest 1.x release; use a full tag such as `@v1.5.0` to pin an exact version. To upgrade later:
+
+```bash
+uv tool upgrade --reinstall intaglio
+# or if you prefer pipx:
+# pipx install git+https://github.com/kckhchen/intaglio@v1
+```
+
+### The `.intagliorc` File
+
+From the root of your **Jekyll site**, run `intaglio init`. This writes a commented `.intagliorc`. The only setting you need is the path to your vault:
+
+```bash
+# .intagliorc
+VAULT_DIR="/path/to/obsidian/vault"
+# or exported as environment variable with
+# export VAULT_DIR="/path/to/obsidian/vault"
+```
+
+`JEKYLL_DIR` defaults to wherever `.intagliorc` lives, so you don't need to set it. Run `intaglio` from that directory or any subdirectory of it.
+
+> [!note]
+> `.intagliorc` contains the absolute path to your vault and exposes your username. Consider adding `.intagliorc` to your `.gitignore`, or, if you wish to carry the config file around, you can export `VAULT_DIR` as environment variable.
+
+> [!important]
+> Earlier versions used a `.env` file. It is still read, but is deprecated and will warn on every run. Rename it to `.intagliorc`.
+
+You can override the settings in `.intagliorc` either with environment variables or temporarily with CLI flags. CLI flags takes precedence over everything else. The tool automatically resolves the config. To see which config source is at work for each variable, use the command:
+
+```bash
+intaglio config
+```
+
+> [!note]
+> **A Note on Styling**: The first time you run the tool, it will create `_includes/obsidian-callouts.html` in your Jekyll repository. This file handles the icons and colors for your callouts. Feel free to customize it.
+
+### Available Flags
+
+`intaglio --help` lists every command, and `intaglio <command> --help` lists the flags for one. The full list is [below](#cli-commands).
+
+Neither your original Obsidian notes nor hand-authored posts on your Jekyll site are ever touched when you run `intaglio update`: cleanup only removes files carrying the tool's own `generator: intaglio` frontmatter marker.
+
+> [!note]
+> Running `intaglio` with no command still means `intaglio run`. At a terminal it first shows which vault and site it is about to touch and asks you to confirm; in a script or CI it just runs.
 
 ## Advanced Configurations
 
